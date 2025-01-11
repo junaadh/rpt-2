@@ -1,0 +1,7 @@
+.zig-cache/
+zig-out/
+
+.venv/
+.python-version
+
+**/__pycache__/
