@@ -10,3 +10,4 @@ zig-out/
 # Added by cargo
 
 /target
+assets/model.safetensors
