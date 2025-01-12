@@ -30,7 +30,14 @@ pub trait ParseTensor<T = Self> {
         let start_ = json
             .find(key)
             .unwrap_or_else(|| panic!("key: {key} not found in json"));
-        println!("{}", &json[start_..start_ + 100]);
+        // println!(
+        //     "{}",
+        //     &json[start_..if start_ + 100 >= json.len() {
+        //         json.len() - 1
+        //     } else {
+        //         start_ + 100
+        //     }]
+        // );
         let start = json[start_..]
             .find(label)
             .unwrap_or_else(|| panic!("label: {label} not found in json {key}"))

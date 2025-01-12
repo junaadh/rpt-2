@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::decoder::ParseTensor;
 
 #[derive(Debug)]
@@ -8,6 +10,13 @@ pub struct W {
 impl W {
     pub fn new(w: Vec<f32>) -> Self {
         Self { weight: w.to_vec() }
+    }
+}
+
+impl fmt::Display for W {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, ".weight: ")?;
+        display_helper(&self.weight, f)
     }
 }
 
@@ -22,7 +31,7 @@ impl ParseTensor for W {
         );
         assert_eq!(
             res.weight.len(),
-            size.2 * std::mem::size_of::<f32>(),
+            size.2,
             "weight expected to be in shape {} found {}",
             size.2,
             res.weight.len()
@@ -55,7 +64,7 @@ impl ParseTensor for WB {
             .collect::<Vec<_>>();
         assert_eq!(
             w.len(),
-            wsize.2 * std::mem::size_of::<f32>(),
+            wsize.2,
             "{}.weight expected to be in shape {} found {}",
             key,
             wsize.2,
@@ -67,7 +76,7 @@ impl ParseTensor for WB {
             .collect::<Vec<_>>();
         assert_eq!(
             b.len(),
-            bsize.2 * std::mem::size_of::<f32>(),
+            bsize.2,
             "{}.bias expected to be in shape {} found {}",
             key,
             bsize.2,
@@ -75,6 +84,15 @@ impl ParseTensor for WB {
         );
 
         Self::new(w, b)
+    }
+}
+
+impl fmt::Display for WB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "\n.weight: ")?;
+        display_helper(&self.weight, f)?;
+        write!(f, ".bias: ")?;
+        display_helper(&self.bias, f)
     }
 }
 
@@ -105,7 +123,7 @@ impl ParseTensor for Attn {
             .collect::<Vec<_>>();
         assert_eq!(
             b.len(),
-            bsize.2 * std::mem::size_of::<f32>(),
+            bsize.2,
             "{}.bias expected to be in shape {} found {}",
             key,
             bsize.2,
@@ -116,6 +134,13 @@ impl ParseTensor for Attn {
         let c_proj = WB::tf_parse(json, raw, Some(&format!("{key}.c_proj")));
 
         Self::new(b, c_attn, c_proj)
+    }
+}
+
+impl fmt::Display for Attn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        display_helper(&self.bias, f)?;
+        write!(f, "\n.c_attn{}\n.c_proj{}", self.c_attn, self.c_proj)
     }
 }
 
@@ -138,6 +163,12 @@ impl ParseTensor for Mlp {
         let c_proj = WB::tf_parse(json, raw, Some(&format!("{key}.c_proj")));
 
         Self::new(c_fc, c_proj)
+    }
+}
+
+impl fmt::Display for Mlp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, ".c_fc{}\n.c_proj{}", self.c_fc, self.c_proj)
     }
 }
 
@@ -172,6 +203,17 @@ impl ParseTensor for H {
     }
 }
 
+impl fmt::Display for H {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f)?;
+        write!(
+            f,
+            ".attn{}\n.ln_1{}\n.ln_2{}\n.mlp{}",
+            self.attn, self.ln_1, self.ln_2, self.mlp
+        )
+    }
+}
+
 #[derive(Debug)]
 pub struct Tensor {
     pub wpe: W,
@@ -196,4 +238,51 @@ impl ParseTensor for Tensor {
         let ln_f = WB::tf_parse(json, raw, Some("ln_f"));
         Self::new(wpe, wte, h, ln_f)
     }
+}
+
+impl fmt::Display for Tensor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{")?;
+        writeln!(f, "wpe{}\nwte{}", self.wpe, self.wte)?;
+
+        for (i, h) in self.h.iter().enumerate() {
+            writeln!(f, "h.{i}{}", h)?;
+        }
+
+        write!(f, "ln_f{}", self.ln_f)?;
+        write!(f, "}}")
+    }
+}
+
+fn display_helper<T: fmt::Display + PartialEq>(
+    something: &[T],
+    f: &mut fmt::Formatter<'_>,
+) -> fmt::Result {
+    write!(f, "Tensor([ ")?;
+
+    for (idx, w) in something.iter().enumerate() {
+        if idx == 14 {
+            break;
+        };
+        if idx % 5 == 0 && idx != 0 {
+            write!(f, "\n\t{} ", w)?;
+        } else {
+            write!(f, "{} ", w)?;
+        }
+    }
+
+    write!(f, "\n\t...")?;
+
+    for (idx, w) in something.iter().enumerate() {
+        if idx == 15 {
+            break;
+        };
+        if idx % 5 == 0 && idx != 0 {
+            write!(f, "\n\t{} ", w)?;
+        } else {
+            write!(f, "{} ", w)?;
+        }
+    }
+
+    writeln!(f, "])")
 }

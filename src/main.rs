@@ -47,4 +47,6 @@ fn main() {
     let buffer = &buffer[8 + json_size as usize..];
 
     let tensor = Tensor::tf_parse(json, buffer, None);
+
+    println!("{}", tensor);
 }
