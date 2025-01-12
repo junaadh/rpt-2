@@ -113,3 +113,5 @@ print(encoding.decode([token_idx]))  # type: ignore
 
 loss = F.cross_entropy(unembedding_out, y_true)
 print(loss)
+
+print(param["wte.weight"][0][0])

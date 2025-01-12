@@ -5,3 +5,8 @@ zig-out/
 .python-version
 
 **/__pycache__/
+
+
+# Added by cargo
+
+/target
