@@ -22,6 +22,61 @@ pub trait Parse<T = Self> {
     fn parse(buf: &[u8]) -> T;
 }
 
+pub trait ParseTensor<T = Self> {
+    fn tf_parse(json: &str, raw: &[u8], key: Option<&str>) -> T;
+    fn tf_get_offsets_and_shape(json: &str, key: &str) -> (usize, usize, usize) {
+        let label = "\"data_offsets\":";
+
+        let start_ = json
+            .find(key)
+            .unwrap_or_else(|| panic!("key: {key} not found in json"));
+        println!("{}", &json[start_..start_ + 100]);
+        let start = json[start_..]
+            .find(label)
+            .unwrap_or_else(|| panic!("label: {label} not found in json {key}"))
+            + start_
+            + label.len()
+            + 1;
+
+        let end = json[start..]
+            .find("]")
+            .unwrap_or_else(|| panic!("found array end"))
+            + start;
+
+        // println!("{}", &json[start..end]);
+
+        let value = json[start..end]
+            .split_once(',')
+            .map(|(s, e)| {
+                let s1 = s.parse::<usize>().expect("failed to parse start to usize");
+                let e1 = e
+                    .parse::<usize>()
+                    .expect("Failed to parse end offset to usize");
+                (s1, e1)
+            })
+            .expect("Expected offset array to be seperated by comma");
+
+        let start = json[start_..]
+            .find("\"shape\":[")
+            .unwrap_or_else(|| panic!("shape not found in json"))
+            + "\"shape\":[".len()
+            + start_;
+        let end = json[start..]
+            .find("]")
+            .unwrap_or_else(|| panic!("closing delimeter not found"))
+            + start;
+
+        let shape = json[start..end]
+            .split(',')
+            .map(|x| x.parse::<usize>().expect("failed to parse shape to usize"))
+            .product::<usize>();
+
+        // println!("value: {shape}");
+
+        (value.0, value.1, shape)
+    }
+}
+
 impl Parse for Span {
     fn parse(buf: &[u8]) -> Self {
         let offset = u32::from_le_bytes(buf[0..4].try_into().expect("Incorrect number of bytes"));
